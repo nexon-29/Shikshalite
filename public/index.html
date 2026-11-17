@@ -135,10 +135,10 @@ function oNew(){const d=S.draft??=blank(),b=k=>`oninput="S.draft.${k}=this.value
   <label>Assignment title</label><input value="${E(d.atitle)}" ${b("atitle")}><label>Assignment task</label><textarea ${b("atask")}>${E(d.atask)}</textarea>
   <button class="p" onclick="saveCourse()">${d.id?"Save changes":"Publish course"}</button> ${d.id?`<button onclick="S.draft=null;S.tab='crs';render()">Cancel</button>`:""}</div>`}
 const addImg=()=>pick(640,"image/jpeg",d=>{if(S.draft.images.length<4){S.draft.images.push(d);render()}},1);
-async function aiGen(){if(!sample)return toast("AI generation needs the Claude-hosted version of this page.");const t=$("#topic").value.trim();if(!t)return toast("Enter a topic");
+async function aiGen(){const t=$("#topic").value.trim();if(!t)return toast("Enter a topic");
   S.busy=true;$("#gb").disabled=true;$("#gs").textContent="Generating… about a minute.";
-  try{const r=await sample.json(`You are an expert teacher. Create a complete mini-course on: "${t}". Subject: ${S.draft.subject}.
-Return ONLY JSON: {"title":str,"summary":str,"material":[{"h":str,"p":str}] (4-6 sections, clear and accurate),"quiz":[{"q":str,"o":[4 strings],"a":0-3 index}] (8 questions testing the material),"assignment":{"title":str,"task":str},"svg":"self-contained educational diagram as SVG markup, viewBox 0 0 600 340, labelled, no scripts, no external refs"}`,{modelTier:"complex"});
+  try{const res=await fetch("/api/generate",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({topic:t,subject:S.draft.subject})});
+    const r=await res.json();if(!res.ok)throw new Error(r.error||"try again");
     Object.assign(S.draft,{title:r.title||t,summary:r.summary||"",material:mat2txt(r.material||[]),quiz:quiz2txt((r.quiz||[]).filter(q=>q.o?.length==4)),atitle:r.assignment?.title||"Assignment",atask:r.assignment?.task||"",svg:r.svg||"",ai:true});toast("Draft ready — review and save")}catch(e){toast("Generation failed: "+(e.message||"try again"))}
   S.busy=false;render()}
 async function saveCourse(){const d=S.draft;if(!d.title.trim())return toast("Add a title");const quiz=txt2quiz(d.quiz);if(!quiz.length)return toast("Add at least one quiz question");
