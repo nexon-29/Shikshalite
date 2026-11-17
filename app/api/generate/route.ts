@@ -64,7 +64,9 @@ export async function POST(req: Request) {
     return Response.json({ ...output, quiz, svg: sanitizeSvg(output.svg) })
   } catch (error) {
     console.error("Course generation failed:", error)
-    if (String((error as { responseBody?: string })?.responseBody ?? "").includes("customer_verification_required")) {
+    const err = error as { message?: string; responseBody?: string; cause?: { responseBody?: string } }
+    const details = [err?.message, err?.responseBody, err?.cause?.responseBody].join(" ")
+    if (/customer_verification_required|credit card/i.test(details)) {
       return Response.json(
         { error: "AI Gateway needs a credit card on your Vercel team to unlock free credits (Vercel dashboard → AI)." },
         { status: 503 },
